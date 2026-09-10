@@ -46,7 +46,7 @@ export default function Dashboard() {
         <section className="metric-grid">
           <MetricCard label="Gross book sales" value={money.format(metrics.gross)} detail="KDP + direct Stripe" />
           <MetricCard label="Amazon printing + fees" value={`−${money.format(metrics.printingFees)}`} detail="25.9% of gross" />
-          <MetricCard label="Gabby’s Stripe fees" value={`−${money.format(metrics.stripeFees)}`} detail="Processing only" />
+          <MetricCard label="Stripe fees" value={`−${money.format(metrics.stripeFees)}`} detail="Est. 3.1% + $0.30 per transaction" />
           <MetricCard label="Net proceeds" value={money.format(metrics.net)} detail="Before 50/50 split" accent />
           <MetricCard label="Gabby" value={money.format(metrics.split)} detail="50% share" />
           <MetricCard label="Ryan" value={money.format(metrics.split)} detail="50% share" />

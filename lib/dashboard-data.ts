@@ -8,12 +8,25 @@ export const salesSeries: SalesPoint[] = daily.map((value, index) => {
   return { date: `Aug ${index + 1}`, daily: value, cumulative: running };
 });
 
+const gross = 186420.32;
+const printingFees = 48270.18;
+const stripeGross = 52740.10;
+const stripeTransactions = 640;
+const stripeFeeRate = 0.031;
+const stripeFixedFee = 0.30;
+const stripeFees = Math.ceil((stripeGross * stripeFeeRate + stripeTransactions * stripeFixedFee) * 100) / 100;
+const net = gross - printingFees - stripeFees;
+
 export const metrics = {
-  gross: 186420.32,
-  printingFees: 48270.18,
-  stripeFees: 1834.71,
-  net: 136315.43,
-  split: 68157.72,
+  gross,
+  printingFees,
+  stripeGross,
+  stripeTransactions,
+  stripeFeeRate,
+  stripeFixedFee,
+  stripeFees,
+  net,
+  split: net / 2,
   copies: 9436,
   todayCopies: 354,
   weekGrowth: 18.4,
