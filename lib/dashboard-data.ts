@@ -10,21 +10,11 @@ export const salesSeries: SalesPoint[] = daily.map((value, index) => {
 
 const gross = 186420.32;
 const printingFees = 48270.18;
-const stripeGross = 52740.10;
-const stripeTransactions = 640;
-const stripeFeeRate = 0.031;
-const stripeFixedFee = 0.30;
-const stripeFees = Math.ceil((stripeGross * stripeFeeRate + stripeTransactions * stripeFixedFee) * 100) / 100;
-const net = gross - printingFees - stripeFees;
+const net = gross - printingFees;
 
 export const metrics = {
   gross,
   printingFees,
-  stripeGross,
-  stripeTransactions,
-  stripeFeeRate,
-  stripeFixedFee,
-  stripeFees,
   net,
   split: net / 2,
   copies: 9436,
