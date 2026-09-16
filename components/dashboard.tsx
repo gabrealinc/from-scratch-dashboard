@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { BookOpen, Download, ExternalLink, Menu, RefreshCw, X } from "lucide-react";
+import { Download, ExternalLink, Menu, RefreshCw, X } from "lucide-react";
 import type { Snapshot } from "@/lib/reporting";
 const money=new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2});
 function Metric({label,value,detail,accent=false}:{label:string;value:string;detail:string;accent?:boolean}) {
@@ -37,8 +37,9 @@ export default function Dashboard({snapshot}:{snapshot:Snapshot|null}) {
     <main>
       <header className="topbar"><button className="icon-button menu" onClick={()=>setMenu(true)} aria-label="Open menu"><Menu/></button><div><p>SALES DASHBOARD</p><h1>Good morning, Gabby + Ryan.</h1></div><div className="top-actions"><button className="range" onClick={()=>router.refresh()}><RefreshCw size={15}/> Refresh view</button><button className="export" onClick={exportData} disabled={!snapshot}><Download size={15}/> Export</button></div></header>
       <div className="content">
-        <section id="overview" className="hero-section"><div className="hero-copy"><p className="eyebrow">Overview · KDP exports</p><h2>From Scratch</h2><p>{snapshot?`Reporting through ${snapshot.latestDate}. Synced ${new Date(snapshot.syncedAt).toLocaleString("en-US",{timeZone:"America/Los_Angeles"})} PT.`:"Your first successful import will appear here."}</p></div><div className="hero-number"><span>Paid copies sold</span><strong>{totals?.copies??"N/A"}</strong><p><BookOpen size={16}/> Net processed units · royalty-date basis</p></div></section>
+        <section id="overview" className="hero-section"><div className="hero-copy"><p className="eyebrow">Overview · KDP exports</p><h2>From Scratch</h2><p>{snapshot?`Reporting through ${snapshot.latestDate}. Synced ${new Date(snapshot.syncedAt).toLocaleString("en-US",{timeZone:"America/Los_Angeles"})} PT.`:"Your first successful import will appear here."}</p></div></section>
         <section className="metric-grid">
+          <Metric label="Total copies sold" value={totals?.copies.toLocaleString("en-US")??"Not available"} detail="Net processed units · royalty-date basis" accent/>
           <Metric label="Gross book sales · retail estimate" value={fmt(totals?.gross)} detail="USD KDP offer price × net paid units"/>
           <Metric label="Amazon printing + fees" value={fmt(totals?.fees)} detail="Retail estimate less KDP royalty; includes Amazon share"/>
           <Metric label="KDP net proceeds" value={fmt(totals?.royalties)} detail="Reported KDP royalties · USD only" accent/>
