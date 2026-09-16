@@ -8,7 +8,7 @@ const sans = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "From Scratch | Sales Dashboard",
-  description: "Private sales and marketing dashboard for From Scratch.",
+  description: "Sales and marketing dashboard for From Scratch.",
   robots: { index: false, follow: false },
 };
 

@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { BookOpen, Download, ExternalLink, LogOut, Menu, RefreshCw, X } from "lucide-react";
+import { BookOpen, Download, ExternalLink, Menu, RefreshCw, X } from "lucide-react";
 import type { Snapshot } from "@/lib/reporting";
 const money=new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2});
 function Metric({label,value,detail,accent=false}:{label:string;value:string;detail:string;accent?:boolean}) {
@@ -16,10 +16,9 @@ function Pending({kicker,title,children}:{kicker:string;title:string;children:Re
 }
 export default function Dashboard({snapshot}:{snapshot:Snapshot|null}) {
   const [menu,setMenu]=useState(false);
-  const [series,setSeries]=useState<"daily"|"cumulative">("daily");
+  const [series,setSeries]=useState<"daily"|"cumulative">("cumulative");
   const router=useRouter();
   useEffect(()=>{const timer=setInterval(()=>router.refresh(),60000);return()=>clearInterval(timer);},[router]);
-  async function logout(){await fetch("/api/auth",{method:"DELETE"});router.replace("/login");router.refresh();}
   function exportData(){
     if(!snapshot)return;
     const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:"application/json"});
@@ -33,12 +32,12 @@ export default function Dashboard({snapshot}:{snapshot:Snapshot|null}) {
       <div className="sidebar-head"><div className="brand-mark">FS</div><button className="icon-button close" onClick={()=>setMenu(false)} aria-label="Close menu"><X/></button></div>
       <div className="book-label"><p>From Scratch</p><span>Sales intelligence</span></div>
       <nav>{nav.map((item,i)=><a href={`#${item.toLowerCase().replace(" ","-")}`} className={i===0?"active":""} key={item} onClick={()=>setMenu(false)}>{item}</a>)}</nav>
-      <div className="sidebar-bottom"><div className="sync-note"><span/><p>{snapshot?"Live KDP data":"Awaiting first sync"}</p><small>Last successfully imported export</small></div><button onClick={logout}><LogOut size={16}/> Sign out</button></div>
+      <div className="sidebar-bottom"><div className="sync-note"><span/><p>{snapshot?"Live KDP data":"Awaiting first sync"}</p><small>Last successfully imported export</small></div></div>
     </aside>
     <main>
-      <header className="topbar"><button className="icon-button menu" onClick={()=>setMenu(true)} aria-label="Open menu"><Menu/></button><div><p>PRIVATE DASHBOARD</p><h1>Good morning, Gabby + Ryan.</h1></div><div className="top-actions"><button className="range" onClick={()=>router.refresh()}><RefreshCw size={15}/> Refresh view</button><button className="export" onClick={exportData} disabled={!snapshot}><Download size={15}/> Export</button></div></header>
+      <header className="topbar"><button className="icon-button menu" onClick={()=>setMenu(true)} aria-label="Open menu"><Menu/></button><div><p>SALES DASHBOARD</p><h1>Good morning, Gabby + Ryan.</h1></div><div className="top-actions"><button className="range" onClick={()=>router.refresh()}><RefreshCw size={15}/> Refresh view</button><button className="export" onClick={exportData} disabled={!snapshot}><Download size={15}/> Export</button></div></header>
       <div className="content">
-        <section id="overview" className="hero-section"><div className="hero-copy"><p className="eyebrow">Overview · KDP exports</p><h2>The book is finding<br/><em>its readers.</em></h2><p>{snapshot?`Reporting through ${snapshot.latestDate}. Synced ${new Date(snapshot.syncedAt).toLocaleString("en-US",{timeZone:"America/Los_Angeles"})} PT.`:"Your first successful import will appear here."}</p></div><div className="hero-number"><span>Paid copies sold</span><strong>{totals?.copies??"N/A"}</strong><p><BookOpen size={16}/> Net processed units · royalty-date basis</p></div></section>
+        <section id="overview" className="hero-section"><div className="hero-copy"><p className="eyebrow">Overview · KDP exports</p><h2>From Scratch</h2><p>{snapshot?`Reporting through ${snapshot.latestDate}. Synced ${new Date(snapshot.syncedAt).toLocaleString("en-US",{timeZone:"America/Los_Angeles"})} PT.`:"Your first successful import will appear here."}</p></div><div className="hero-number"><span>Paid copies sold</span><strong>{totals?.copies??"N/A"}</strong><p><BookOpen size={16}/> Net processed units · royalty-date basis</p></div></section>
         <section className="metric-grid">
           <Metric label="Gross book sales · retail estimate" value={fmt(totals?.gross)} detail="USD KDP offer price × net paid units"/>
           <Metric label="Amazon printing + fees" value={fmt(totals?.fees)} detail="Retail estimate less KDP royalty; includes Amazon share"/>
@@ -53,7 +52,7 @@ export default function Dashboard({snapshot}:{snapshot:Snapshot|null}) {
         <div id="audience" className="two-col"><Pending kicker="Amazon readers" title="Ratings + reviews">No live ratings or reviews have been imported yet.</Pending><Pending kicker="@readfromscratch" title="Instagram reach + engagement">Followers, reach, profile visits, and content metrics will appear after Meta authorization.</Pending></div>
         <div id="marketing" className="two-col lower"><Pending kicker="Marketing timeline" title="What moved the story">Add dated campaigns, posts, emails, and appearances when the marketing log is connected.</Pending><Pending kicker="ReadFromScratch.com" title="Traffic + purchase-page clicks">Tracks website sessions and clicks on the Amazon purchase button. Purchase-page click rate means sessions with a purchase-page click divided by total sessions, not completed purchases.</Pending></div>
         <section className="panel sources" id="data-health"><Title kicker="Data health" title="The reporting pipeline" aside={<a className="report-link" href="https://docs.google.com/spreadsheets/d/1y0I6R_wP0d8p6diFDZbJcAuJicLt5BziOwJOpi4Ub08/edit" target="_blank" rel="noopener noreferrer">Running report <ExternalLink size={14}/></a>}/><div className="pipeline"><div>KDP exports<small>Drive raw archive</small></div><span>→</span><div>Running report<small>Normalized + cumulative</small></div><span>→</span><div>Private data store<small>Verified reporting snapshot</small></div><span>→</span><div>From Scratch<small>Refreshes view every minute</small></div></div><div className="source-table"><div><p>KDP + running report</p><span><i/>{snapshot?"Imported successfully":"Awaiting import"}</span><small>{snapshot?.reports.length??0} exports</small></div><div><p>Automatic folder imports</p><span><i/>Google setup required</span><small>Cloud trigger</small></div><div><p>Stripe, Meta, Attribution, Amazon data, site analytics</p><span><i/>Not connected</span><small>Pending</small></div></div>{snapshot?.currencies.map(c=><p className="currency-note" key={c.currency}>{c.currency}: {c.royalty.toFixed(2)} reported royalties · {c.copies} paid copies. No automatic currency conversion.</p>)}</section>
-      </div><footer><div className="brand-mark small">FS</div><p>FROM SCRATCH · PRIVATE & CONFIDENTIAL</p><span>Built for the story behind the numbers.</span></footer>
+      </div><footer><div className="brand-mark small">FS</div><p>FROM SCRATCH · SALES REPORTING</p><span>Built for the story behind the numbers.</span></footer>
     </main>
   </div>;
 }
