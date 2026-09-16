@@ -1,84 +1,59 @@
 "use client";
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { ArrowDownRight, ArrowUpRight, BookOpen, ChevronDown, Download, ExternalLink, Eye, Instagram, LogOut, Menu, MousePointerClick, RefreshCw, ShoppingBag, Star, Trophy, Users, X } from "lucide-react";
-import { dataUpdatedAt, funnel, metrics, rankings, salesSeries, sourceStatus, timeline } from "@/lib/dashboard-data";
-
-const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-const number = new Intl.NumberFormat("en-US");
-
-function MetricCard({ label, value, detail, accent }: { label: string; value: string; detail: string; accent?: boolean }) {
-  return <article className={`metric-card ${accent ? "accent" : ""}`}><p>{label}</p><strong>{value}</strong><span>{detail}</span></article>;
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { BookOpen, Download, ExternalLink, LogOut, Menu, RefreshCw, X } from "lucide-react";
+import type { Snapshot } from "@/lib/reporting";
+const money=new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2});
+function Metric({label,value,detail,accent=false}:{label:string;value:string;detail:string;accent?:boolean}) {
+  return <article className={`metric-card ${accent?"accent":""}`}><p>{label}</p><strong>{value}</strong><span>{detail}</span></article>;
 }
-
-function SectionTitle({ kicker, title, aside }: { kicker: string; title: string; aside?: React.ReactNode }) {
+function Title({kicker,title,aside}:{kicker:string;title:string;aside?:React.ReactNode}) {
   return <div className="section-title"><div><p>{kicker}</p><h2>{title}</h2></div>{aside}</div>;
 }
-
-export default function Dashboard() {
-  const [menu, setMenu] = useState(false);
-  const [range] = useState("Last 30 days");
-  const [series, setSeries] = useState<"daily" | "cumulative">("daily");
-  const router = useRouter();
-
-  async function logout() { await fetch("/api/auth", { method: "DELETE" }); router.replace("/login"); router.refresh(); }
-
-  const nav = ["Overview", "Sales", "Attribution", "Audience", "Marketing", "Data health"];
+function Pending({kicker,title,children}:{kicker:string;title:string;children:React.ReactNode}) {
+  return <section className="panel"><Title kicker={kicker} title={title}/><p className="pending-copy">{children}</p><span className="pending-badge">Not connected</span></section>;
+}
+export default function Dashboard({snapshot}:{snapshot:Snapshot|null}) {
+  const [menu,setMenu]=useState(false);
+  const [series,setSeries]=useState<"daily"|"cumulative">("daily");
+  const router=useRouter();
+  useEffect(()=>{const timer=setInterval(()=>router.refresh(),60000);return()=>clearInterval(timer);},[router]);
+  async function logout(){await fetch("/api/auth",{method:"DELETE"});router.replace("/login");router.refresh();}
+  function exportData(){
+    if(!snapshot)return;
+    const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download="from-scratch-sales.json";link.click();URL.revokeObjectURL(url);
+  }
+  const totals=snapshot?.totals;
+  const fmt=(v:number|undefined)=>v===undefined?"Not available":money.format(v);
+  const nav=["Overview","Sales","Attribution","Audience","Marketing","Data health"];
   return <div className="app-shell">
-    <aside className={menu ? "sidebar open" : "sidebar"}>
-      <div className="sidebar-head"><div className="brand-mark">FS</div><button className="icon-button close" onClick={() => setMenu(false)} aria-label="Close menu"><X /></button></div>
+    <aside className={menu?"sidebar open":"sidebar"}>
+      <div className="sidebar-head"><div className="brand-mark">FS</div><button className="icon-button close" onClick={()=>setMenu(false)} aria-label="Close menu"><X/></button></div>
       <div className="book-label"><p>From Scratch</p><span>Sales intelligence</span></div>
-      <nav>{nav.map((item, i) => <a href={`#${item.toLowerCase().replace(" ", "-")}`} className={i === 0 ? "active" : ""} key={item}>{item}</a>)}</nav>
-      <div className="sidebar-bottom"><div className="sync-note"><span /><p>Demo data</p><small>Adapters ready to connect</small></div><button onClick={logout}><LogOut size={16} /> Sign out</button></div>
+      <nav>{nav.map((item,i)=><a href={`#${item.toLowerCase().replace(" ","-")}`} className={i===0?"active":""} key={item} onClick={()=>setMenu(false)}>{item}</a>)}</nav>
+      <div className="sidebar-bottom"><div className="sync-note"><span/><p>{snapshot?"Live KDP data":"Awaiting first sync"}</p><small>Last successfully imported export</small></div><button onClick={logout}><LogOut size={16}/> Sign out</button></div>
     </aside>
-
     <main>
-      <header className="topbar"><button className="icon-button menu" onClick={() => setMenu(true)} aria-label="Open menu"><Menu /></button><div><p>PRIVATE DASHBOARD</p><h1>Good morning, Gabby + Ryan.</h1></div><div className="top-actions"><button className="range">{range}<ChevronDown size={15} /></button><button className="export"><Download size={15} /> Export</button></div></header>
-
+      <header className="topbar"><button className="icon-button menu" onClick={()=>setMenu(true)} aria-label="Open menu"><Menu/></button><div><p>PRIVATE DASHBOARD</p><h1>Good morning, Gabby + Ryan.</h1></div><div className="top-actions"><button className="range" onClick={()=>router.refresh()}><RefreshCw size={15}/> Refresh view</button><button className="export" onClick={exportData} disabled={!snapshot}><Download size={15}/> Export</button></div></header>
       <div className="content">
-        <section id="overview" className="hero-section">
-          <div className="hero-copy"><p className="eyebrow">Overview · {dataUpdatedAt}</p><h2>The book is finding<br/><em>its readers.</em></h2><p>One view of every sale, every signal, and what remains after the work is paid for.</p></div>
-          <div className="hero-number"><span>Copies sold</span><strong>{number.format(metrics.copies)}</strong><p><ArrowUpRight size={16} /> {metrics.weekGrowth}% vs. prior period</p></div>
-        </section>
-
+        <section id="overview" className="hero-section"><div className="hero-copy"><p className="eyebrow">Overview · KDP exports</p><h2>The book is finding<br/><em>its readers.</em></h2><p>{snapshot?`Reporting through ${snapshot.latestDate}. Synced ${new Date(snapshot.syncedAt).toLocaleString("en-US",{timeZone:"America/Los_Angeles"})} PT.`:"Your first successful import will appear here."}</p></div><div className="hero-number"><span>Paid copies sold</span><strong>{totals?.copies??"N/A"}</strong><p><BookOpen size={16}/> Net processed units · royalty-date basis</p></div></section>
         <section className="metric-grid">
-          <MetricCard label="Gross book sales" value={money.format(metrics.gross)} detail="KDP + direct Stripe" />
-          <MetricCard label="Amazon printing + fees" value={`−${money.format(metrics.printingFees)}`} detail="25.9% of gross" />
-          <MetricCard label="Stripe fees" value={`−${money.format(metrics.stripeFees)}`} detail="Est. 3.1% + $0.30 per transaction" />
-          <MetricCard label="Net proceeds" value={money.format(metrics.net)} detail="Before 50/50 split" accent />
-          <MetricCard label="Gabby" value={money.format(metrics.split)} detail="50% share" />
-          <MetricCard label="Ryan" value={money.format(metrics.split)} detail="50% share" />
+          <Metric label="Gross book sales · retail estimate" value={fmt(totals?.gross)} detail="USD KDP offer price × net paid units"/>
+          <Metric label="Amazon printing + fees" value={fmt(totals?.fees)} detail="Retail estimate less KDP royalty; includes Amazon share"/>
+          <Metric label="Stripe fees" value="Not connected" detail="No direct Stripe sales or fees imported yet"/>
+          <Metric label="KDP net proceeds" value={fmt(totals?.royalties)} detail="Reported KDP royalties · USD only" accent/>
+          <Metric label="Gabby · 50%" value={fmt(totals?totals.royalties/2:undefined)} detail="KDP share · before any direct-sales adjustments"/>
+          <Metric label="Ryan · 50%" value={fmt(totals?totals.royalties/2:undefined)} detail="KDP share · exact split retained before rounding"/>
         </section>
-        <p className="tax-note">KDP revenue shown as reported. Sales tax is not automatically subtracted.</p>
-
-        <section id="sales" className="panel sales-panel">
-          <SectionTitle kicker="Sales velocity" title="Daily + cumulative book sales" aside={<div className="segmented"><button className={series === "daily" ? "selected" : ""} onClick={() => setSeries("daily")}>Daily</button><button className={series === "cumulative" ? "selected" : ""} onClick={() => setSeries("cumulative")}>Cumulative</button></div>} />
-          <div className="chart-summary"><strong>{series === "daily" ? number.format(metrics.todayCopies) : number.format(metrics.copies)}</strong><span>{series === "daily" ? "copies on Aug 28" : "copies all time"}</span></div>
-          <div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><AreaChart data={salesSeries}><defs><linearGradient id="redFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#c72d22" stopOpacity={0.28}/><stop offset="100%" stopColor="#c72d22" stopOpacity={0}/></linearGradient></defs><CartesianGrid stroke="#ded8ca" strokeDasharray="2 4" vertical={false}/><XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "#776f64", fontSize: 11 }} interval={6}/><YAxis hide/><Tooltip contentStyle={{ background: "#161512", color: "#fff", border: 0, borderRadius: 2 }} formatter={(v) => number.format(Number(v))}/><Area type="monotone" dataKey={series} stroke="#b9251c" strokeWidth={2.5} fill="url(#redFill)" /></AreaChart></ResponsiveContainer></div>
-        </section>
-
-        <div className="two-col" id="attribution">
-          <section className="panel funnel-panel"><SectionTitle kicker="Amazon Attribution" title="From attention to purchase" /><div className="funnel">{funnel.map((item, i) => <div className="funnel-row" key={item.label}><div className="funnel-icon">{i === 0 ? <Eye/> : i === 1 ? <ShoppingBag/> : <BookOpen/>}</div><div><p>{item.label}</p><strong>{number.format(item.value)}</strong></div><span>{item.rate}</span></div>)}</div><div className="conversion"><p>View → purchase conversion</p><strong>8.0%</strong><small><ArrowUpRight size={14}/> 1.2 pts this period</small></div></section>
-          <section className="panel"><SectionTitle kicker="Amazon position" title="Category rankings" aside={<Trophy className="red"/>}/><div className="ranking-list">{rankings.map((r) => <div className="ranking" key={r.category}><strong>#{r.current}</strong><div><p>{r.category}</p><span>Best: #{r.best}</span></div><small className={r.movement > 0 ? "up" : "down"}>{r.movement > 0 ? <ArrowUpRight/> : <ArrowDownRight/>}{Math.abs(r.movement)}</small></div>)}</div><div className="milestone"><Trophy size={17}/><p><strong>#1 Bestseller</strong><br/>Creativity Self-Help · Aug 24</p></div></section>
-        </div>
-
-        <section className="audience-grid" id="audience">
-          <article className="audience-card"><div className="audience-icon"><Star/></div><p>Amazon rating</p><strong>4.8 <small>/ 5</small></strong><span>1,284 ratings · 682 reviews</span></article>
-          <article className="audience-card"><div className="audience-icon"><Instagram/></div><p>@readfromscratch</p><strong>84.2K</strong><span>followers · +12.8% this period</span></article>
-          <article className="audience-card"><div className="audience-icon"><Users/></div><p>Website sessions</p><strong>47.6K</strong><span>68.2% new visitors</span></article>
-          <article className="audience-card"><div className="audience-icon"><MousePointerClick/></div><p>Clicks to purchase page</p><strong>12.9K</strong><span>27.1% purchase-page click rate</span></article>
-        </section>
-
-        <div className="two-col lower" id="marketing">
-          <section className="panel"><SectionTitle kicker="Marketing timeline" title="What moved the story" /><div className="timeline">{timeline.map((item) => <div className="timeline-item" key={item.date}><time>{item.date}</time><span className={item.kind}/><div><p>{item.title}</p><small>{item.detail}</small></div></div>)}</div></section>
-          <section className="panel traffic-panel"><SectionTitle kicker="ReadFromScratch.com" title="Traffic + purchase-page clicks" /><div className="traffic-numbers"><div><p>Website sessions</p><strong>47,602</strong></div><div><p>Clicks to purchase page</p><strong>12,901</strong></div></div><div className="bar-chart"><ResponsiveContainer width="100%" height="100%"><BarChart data={salesSeries.slice(-14)}><Bar dataKey="daily" fill="#c72d22" radius={[2,2,0,0]}/><XAxis dataKey="date" hide/><YAxis hide/><Tooltip cursor={{fill:"#eee8da"}} contentStyle={{ background: "#161512", color: "#fff", border: 0 }}/></BarChart></ResponsiveContainer></div><p className="click-rate"><strong>27.1%</strong> purchase-page click rate</p><a href="https://readfromscratch.com" target="_blank">Open site <ExternalLink size={14}/></a></section>
-        </div>
-
-        <section className="panel sources" id="data-health"><SectionTitle kicker="Data health" title="The reporting pipeline" aside={<button className="refresh"><RefreshCw size={14}/> Refresh sources</button>}/><div className="pipeline"><div>KDP exports<small>Drive raw archive</small></div><span>→</span><div>Master Sheet<small>Normalized + cumulative</small></div><span>→</span><div>Dashboard DB<small>Canonical reporting</small></div><span>→</span><div>From Scratch<small>Private dashboard</small></div></div><div className="source-table">{sourceStatus.map((s) => <div key={s.name}><p>{s.name}</p><span><i/>{s.state}</span><small>{s.cadence}</small></div>)}</div></section>
-      </div>
-      <footer><div className="brand-mark small">FS</div><p>FROM SCRATCH · PRIVATE & CONFIDENTIAL</p><span>Built for the story behind the numbers.</span></footer>
+        <p className="tax-note">KDP prices are used as reported. No additional sales-tax deduction. Royalties are already net of Amazon costs, which are not deducted twice. Non-USD royalties remain in their original currencies.</p>
+        <section id="sales" className="panel sales-panel"><Title kicker="Sales velocity" title="Daily + cumulative book sales" aside={<div className="segmented"><button className={series==="daily"?"selected":""} onClick={()=>setSeries("daily")}>Daily</button><button className={series==="cumulative"?"selected":""} onClick={()=>setSeries("cumulative")}>Cumulative</button></div>}/><div className="chart-summary"><strong>{series==="daily"?snapshot?.daily.at(-1)?.daily??0:totals?.copies??0}</strong><span>{series==="daily"?`paid copies on ${snapshot?.latestDate??"latest royalty date"}`:"paid copies across all imported dates"}</span></div><div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><AreaChart data={snapshot?.daily??[]}><defs><linearGradient id="redFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#c72d22" stopOpacity={.28}/><stop offset="100%" stopColor="#c72d22" stopOpacity={0}/></linearGradient></defs><CartesianGrid stroke="#ded8ca" strokeDasharray="2 4" vertical={false}/><XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill:"#776f64",fontSize:11}} minTickGap={35}/><YAxis allowDecimals={false} axisLine={false} tickLine={false} width={30} tick={{fontSize:11}}/><Tooltip/><Area type="monotone" dataKey={series} stroke="#b9251c" strokeWidth={2.5} fill="url(#redFill)"/></AreaChart></ResponsiveContainer></div></section>
+        <div id="attribution" className="two-col"><Pending kicker="Amazon Attribution" title="From attention to purchase">Detail-page views, add-to-cart events, and attributed purchases will appear when Amazon Attribution is connected. Website clicks alone are not purchases.</Pending><Pending kicker="Amazon position" title="Category rankings + milestones">Rankings and bestseller milestones will appear when the Amazon-data adapter is connected.</Pending></div>
+        <div id="audience" className="two-col"><Pending kicker="Amazon readers" title="Ratings + reviews">No live ratings or reviews have been imported yet.</Pending><Pending kicker="@readfromscratch" title="Instagram reach + engagement">Followers, reach, profile visits, and content metrics will appear after Meta authorization.</Pending></div>
+        <div id="marketing" className="two-col lower"><Pending kicker="Marketing timeline" title="What moved the story">Add dated campaigns, posts, emails, and appearances when the marketing log is connected.</Pending><Pending kicker="ReadFromScratch.com" title="Traffic + purchase-page clicks">Tracks website sessions and clicks on the Amazon purchase button. Purchase-page click rate means sessions with a purchase-page click divided by total sessions, not completed purchases.</Pending></div>
+        <section className="panel sources" id="data-health"><Title kicker="Data health" title="The reporting pipeline" aside={<a className="report-link" href="https://docs.google.com/spreadsheets/d/1y0I6R_wP0d8p6diFDZbJcAuJicLt5BziOwJOpi4Ub08/edit" target="_blank" rel="noopener noreferrer">Running report <ExternalLink size={14}/></a>}/><div className="pipeline"><div>KDP exports<small>Drive raw archive</small></div><span>→</span><div>Running report<small>Normalized + cumulative</small></div><span>→</span><div>Private data store<small>Verified reporting snapshot</small></div><span>→</span><div>From Scratch<small>Refreshes view every minute</small></div></div><div className="source-table"><div><p>KDP + running report</p><span><i/>{snapshot?"Imported successfully":"Awaiting import"}</span><small>{snapshot?.reports.length??0} exports</small></div><div><p>Automatic folder imports</p><span><i/>Google setup required</span><small>Cloud trigger</small></div><div><p>Stripe, Meta, Attribution, Amazon data, site analytics</p><span><i/>Not connected</span><small>Pending</small></div></div>{snapshot?.currencies.map(c=><p className="currency-note" key={c.currency}>{c.currency}: {c.royalty.toFixed(2)} reported royalties · {c.copies} paid copies. No automatic currency conversion.</p>)}</section>
+      </div><footer><div className="brand-mark small">FS</div><p>FROM SCRATCH · PRIVATE & CONFIDENTIAL</p><span>Built for the story behind the numbers.</span></footer>
     </main>
   </div>;
 }
