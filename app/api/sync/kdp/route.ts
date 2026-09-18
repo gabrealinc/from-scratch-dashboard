@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "crypto";
 import { put } from "@vercel/blob";
 import { buildSnapshot, sheetPlan, type RawReport } from "@/lib/reporting";
+import { convertToUsd } from "@/lib/fx";
 export const maxDuration = 60;
 export async function POST(request: Request) {
   const secret = process.env.SYNC_SECRET;
@@ -13,7 +14,7 @@ export async function POST(request: Request) {
   if (text.length > 3500000) return Response.json({error:"Report payload too large; import was not changed."},{status:413});
   try {
     const body = JSON.parse(text) as {phase:"prepare"|"commit";reports:RawReport[];sheetVerified?:boolean};
-    const snapshot=buildSnapshot(body.reports);
+    const snapshot=await convertToUsd(buildSnapshot(body.reports));
     const plan=sheetPlan(snapshot);
     if (body.phase === "prepare") return Response.json({snapshot,plan},{headers:{"Cache-Control":"no-store"}});
     if (body.phase !== "commit" || body.sheetVerified !== true) return Response.json({error:"Verified master sheet write required."},{status:400});

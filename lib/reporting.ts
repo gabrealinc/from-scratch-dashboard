@@ -5,8 +5,11 @@ export type Sale = {
   sold: number; refunded: number; netUnits: number; retailValue: number;
   manufacturingCost: number; royalty: number; currency: string;
   sourceId: string; sourceModifiedAt: string;
+  fx?: {date:string; rate:number; source:string};
+  retailUsd?:number; manufacturingUsd?:number; feesUsd?:number; royaltyUsd?:number;
 };
 export type Snapshot = { version: 1; syncedAt: string; latestDate: string; sales: Sale[];
+  usdConverted?: boolean;
   reports: { id: string; name: string; modifiedTime: string }[];
   totals: { copies: number; gross: number; fees: number; manufacturing: number; royalties: number };
   currencies: { currency: string; royalty: number; copies: number }[];
@@ -66,10 +69,11 @@ export function buildSnapshot(reports: RawReport[]): Snapshot {
   return {version:1,syncedAt:new Date().toISOString(),latestDate:daily.at(-1)?.date??"",sales,reports:reports.map(({id,name,modifiedTime})=>({id,name,modifiedTime})),totals:{copies:sum(sales,"netUnits"),gross:sum(usd,"retailValue"),fees:cents(sum(usd,"retailValue")-sum(usd,"royalty")),manufacturing:sum(usd,"manufacturingCost"),royalties:sum(usd,"royalty")},currencies:[...new Set(sales.map(r=>r.currency))].sort().map(currency=>({currency,royalty:sum(sales.filter(r=>r.currency===currency),"royalty"),copies:sum(sales.filter(r=>r.currency===currency),"netUnits")})),daily};
 }
 export function sheetPlan(snapshot: Snapshot) {
+  const headers = snapshot.usdConverted ? [...salesHeaders,"FX rate date","USD per original currency unit","FX source","Retail value (USD)","Printing / delivery (USD)","Amazon printing + fees (USD)","KDP royalty (USD)"] : salesHeaders;
   return {
-    "Sales Master":[salesHeaders,...snapshot.sales.map(r=>[r.date,r.orderDate,r.title,r.author,r.bookId,r.marketplace,r.format,r.royaltyType,r.transactionType,r.sold,r.refunded,r.netUnits,r.retailValue,r.manufacturingCost,r.royalty,r.currency,r.sourceId,r.sourceModifiedAt])],
+    "Sales Master":[headers,...snapshot.sales.map(r=>[r.date,r.orderDate,r.title,r.author,r.bookId,r.marketplace,r.format,r.royaltyType,r.transactionType,r.sold,r.refunded,r.netUnits,r.retailValue,r.manufacturingCost,r.royalty,r.currency,r.sourceId,r.sourceModifiedAt,...(snapshot.usdConverted?[r.fx!.date,r.fx!.rate,r.fx!.source,r.retailUsd!,r.manufacturingUsd!,r.feesUsd!,r.royaltyUsd!]:[])])],
     "Import Log":[["Source file ID","File name","Source modified at","Last successful sync","Status"],...snapshot.reports.map(r=>[r.id,r.name,r.modifiedTime,snapshot.syncedAt,"Synced"])],
-    "Dashboard Summary":[["Metric","Value","Definition"],["Paid copies",snapshot.totals.copies,"Net paid units across currencies, royalty-date basis"],["Retail value estimate (USD)",snapshot.totals.gross,"KDP average offer price without tax × net units"],["Amazon printing + fees (USD)",snapshot.totals.fees,"Retail estimate less reported royalty; includes Amazon share and printing/delivery"],["Printing / delivery component (USD)",snapshot.totals.manufacturing,"Reported average cost × net units; already included in Amazon fees"],["Reported KDP royalty (USD)",snapshot.totals.royalties,"Source of truth for author proceeds; do not subtract fees again"],["Gabby 50% (USD)",snapshot.totals.royalties/2,"50% of reported KDP royalty"],["Ryan 50% (USD)",snapshot.totals.royalties/2,"50% of reported KDP royalty"],["Updated",snapshot.syncedAt,"Latest successful source import"],["Latest royalty date",snapshot.latestDate,"Not necessarily the customer's order date"]],
+    "Dashboard Summary":[["Metric","Value","Definition"],["Paid copies",snapshot.totals.copies,"Net paid units across currencies, royalty-date basis"],["Retail value estimate (USD)",snapshot.totals.gross,"KDP average offer price without tax × net units; all currencies converted to USD when FX is enabled"],["Amazon printing + fees (USD)",snapshot.totals.fees,"USD retail estimate less USD royalty; includes Amazon share and printing/delivery"],["Printing / delivery component (USD)",snapshot.totals.manufacturing,"Reported average cost × net units, converted to USD; already included in Amazon fees"],["KDP royalty equivalent (USD)",snapshot.totals.royalties,"All currencies converted at dated reference rates; reporting estimate, not actual bank payout"],["Gabby 50% (USD)",snapshot.totals.royalties/2,"50% of combined USD royalty equivalent"],["Ryan 50% (USD)",snapshot.totals.royalties/2,"50% of combined USD royalty equivalent"],["Updated",snapshot.syncedAt,"Latest successful source import"],["Latest royalty date",snapshot.latestDate,"Not necessarily the customer's order date"]],
     "Daily Sales":[["Royalty date","Net paid units","Cumulative paid units"],...snapshot.daily.map(r=>[r.date,r.daily,r.cumulative])]
   };
 }
