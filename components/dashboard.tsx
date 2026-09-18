@@ -11,9 +11,6 @@ function Metric({label,value,detail,accent=false}:{label:string;value:string;det
 function Title({kicker,title,aside}:{kicker:string;title:string;aside?:React.ReactNode}) {
   return <div className="section-title"><div><p>{kicker}</p><h2>{title}</h2></div>{aside}</div>;
 }
-function Pending({kicker,title,children}:{kicker:string;title:string;children:React.ReactNode}) {
-  return <section className="panel"><Title kicker={kicker} title={title}/><p className="pending-copy">{children}</p><span className="pending-badge">Not connected</span></section>;
-}
 export default function Dashboard({snapshot}:{snapshot:Snapshot|null}) {
   const [menu,setMenu]=useState(false);
   const [series,setSeries]=useState<"daily"|"cumulative">("cumulative");
@@ -26,7 +23,7 @@ export default function Dashboard({snapshot}:{snapshot:Snapshot|null}) {
   }
   const totals=snapshot?.totals;
   const fmt=(v:number|undefined)=>v===undefined?"Not available":money.format(v);
-  const nav=["Overview","Sales","Rankings","Audience","Marketing","Data health"];
+  const nav=["Overview","Sales","Payouts","Data health"];
   return <div className="app-shell">
     <aside className={menu?"sidebar open":"sidebar"}>
       <div className="sidebar-head"><div className="brand-mark">FS</div><button className="icon-button close" onClick={()=>setMenu(false)} aria-label="Close menu"><X/></button></div>
@@ -65,10 +62,7 @@ export default function Dashboard({snapshot}:{snapshot:Snapshot|null}) {
             <span className="pending-badge">Report format verified · automatic payment imports not active</span>
           </div>
         </details>
-        <div id="rankings"><Pending kicker="Amazon position" title="Category rankings + milestones">Rankings and bestseller milestones will appear when the Amazon-data adapter is connected.</Pending></div>
-        <div id="audience" className="two-col"><Pending kicker="Amazon + Goodreads" title="Ratings + reviews">Amazon and Goodreads ratings and written-review counts will be shown separately here after their data sources are connected.</Pending><Pending kicker="@readfromscratch" title="Instagram reach + engagement">Instagram insights require a Business or Creator account and authorization. Direct Instagram login can work without a linked Facebook Page. No social analytics have been imported yet.</Pending></div>
-        <div id="marketing" className="two-col lower"><Pending kicker="Marketing timeline" title="What moved the story">Add dated campaigns, posts, emails, and appearances when the marketing log is connected.</Pending><Pending kicker="ReadFromScratch.com" title="Traffic + purchase-page clicks">Tracks website sessions and clicks on the Amazon purchase button. Purchase-page click rate means sessions with a purchase-page click divided by total sessions, not completed purchases.</Pending></div>
-        <section className="panel sources" id="data-health"><Title kicker="Data health" title="The reporting pipeline" aside={<a className="report-link" href="https://docs.google.com/spreadsheets/d/1y0I6R_wP0d8p6diFDZbJcAuJicLt5BziOwJOpi4Ub08/edit" target="_blank" rel="noopener noreferrer">Running report <ExternalLink size={14}/></a>}/><div className="pipeline"><div>KDP exports<small>Drive raw archive</small></div><span>→</span><div>Running report<small>Normalized + cumulative</small></div><span>→</span><div>Private data store<small>Verified reporting snapshot</small></div><span>→</span><div>From Scratch<small>Refreshes view every minute</small></div></div><div className="source-table"><div><p>KDP + running report</p><span><i/>{snapshot?"Imported successfully":"Awaiting import"}</span><small>{snapshot?.reports.length??0} exports</small></div><div><p>Automatic folder imports</p><span><i/>Google setup required</span><small>Cloud trigger</small></div><div><p>Social insights, Amazon + Goodreads, site analytics</p><span><i/>Not connected</span><small>Pending</small></div></div>{snapshot?.currencies.map(c=><p className="currency-note" key={c.currency}>{c.currency}: {c.royalty.toFixed(2)} original-currency royalties · {c.copies} paid copies. Included in USD totals after conversion.</p>)}</section>
+        <section className="panel sources" id="data-health"><Title kicker="Data health" title="The reporting pipeline" aside={<a className="report-link" href="https://docs.google.com/spreadsheets/d/1y0I6R_wP0d8p6diFDZbJcAuJicLt5BziOwJOpi4Ub08/edit" target="_blank" rel="noopener noreferrer">Running report <ExternalLink size={14}/></a>}/><div className="pipeline"><div>KDP exports<small>Drive raw archive</small></div><span>→</span><div>Running report<small>Normalized + cumulative</small></div><span>→</span><div>Private data store<small>Verified reporting snapshot</small></div><span>→</span><div>From Scratch<small>Refreshes view every minute</small></div></div><div className="source-table"><div><p>KDP + running report</p><span><i/>{snapshot?"Imported successfully":"Awaiting import"}</span><small>{snapshot?.reports.length??0} exports</small></div><div><p>Automatic folder imports</p><span><i/>Google setup required</span><small>Cloud trigger</small></div><div><p>KDP Payments report</p><span><i/>First report empty</span><small>Automatic import pending</small></div></div>{snapshot?.currencies.map(c=><p className="currency-note" key={c.currency}>{c.currency}: {c.royalty.toFixed(2)} original-currency royalties · {c.copies} paid copies. Included in USD totals after conversion.</p>)}</section>
       </div><footer><div className="brand-mark small">FS</div><p>FROM SCRATCH · SALES REPORTING</p><span>Built for the story behind the numbers.</span></footer>
     </main>
   </div>;
