@@ -45,14 +45,14 @@ export default function Dashboard({snapshot}:{snapshot:Snapshot|null}) {
         </section>
         <p className="tax-note">KDP prices are used as reported. No additional sales-tax deduction. Royalties are already net of Amazon costs, which are not deducted twice. International amounts are converted to USD using dated reference rates. Original amounts and currencies are preserved in the running report. USD equivalents are estimates, not confirmed bank payouts.</p>
         <section id="sales" className="panel sales-panel"><Title kicker="Sales velocity" title="Daily + cumulative book sales" aside={<div className="segmented"><button className={series==="daily"?"selected":""} onClick={()=>setSeries("daily")}>Daily</button><button className={series==="cumulative"?"selected":""} onClick={()=>setSeries("cumulative")}>Cumulative</button></div>}/><div className="chart-summary"><strong>{series==="daily"?snapshot?.daily.at(-1)?.daily??0:totals?.copies??0}</strong><span>{series==="daily"?`paid copies on ${snapshot?.latestDate??"latest royalty date"}`:"paid copies across all imported dates"}</span></div><div className="chart-wrap"><ResponsiveContainer width="100%" height="100%"><AreaChart data={snapshot?.daily??[]}><defs><linearGradient id="redFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#c72d22" stopOpacity={.28}/><stop offset="100%" stopColor="#c72d22" stopOpacity={0}/></linearGradient></defs><CartesianGrid stroke="#ded8ca" strokeDasharray="2 4" vertical={false}/><XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill:"#776f64",fontSize:11}} minTickGap={35}/><YAxis allowDecimals={false} axisLine={false} tickLine={false} width={30} tick={{fontSize:11}}/><Tooltip/><Area type="monotone" dataKey={series} stroke="#b9251c" strokeWidth={2.5} fill="url(#redFill)"/></AreaChart></ResponsiveContainer></div></section>
-        <details className="panel payouts-panel" id="payouts">
-          <summary><span><span className="eyebrow">Cash flow · separate from earned royalties</span><span className="payouts-title">Amazon payouts</span></span><span className="payouts-toggle">View details <span aria-hidden="true">+</span></span></summary>
+        <section className="panel payouts-panel" id="payouts">
+          <Title kicker="Cash flow · separate from earned royalties" title="Amazon payouts"/>
           <div className="payouts-content">
             <p className="payouts-intro">Royalties earned are not the same as money paid into your bank. This section tracks actual Amazon payments without changing the sales totals or 50/50 royalty split above.</p>
             <div className="payouts-grid">
               <Metric label="Royalty equivalent · USD" value={fmt(totals?.royalties)} detail="Earned proceeds in imported KDP sales reports, not confirmed cash received"/>
-              <Metric label="Amazon payments issued" value="No payouts reported" detail="The first Payments report contains headers only; no payment records yet"/>
-              <Metric label="Confirmed bank deposits" value="Not available" detail="Requires deposit confirmation; an issued payment is not a verified bank receipt"/>
+              <Metric label="Amazon payments issued" value="$0" detail="Empty-report placeholder · no payment records yet"/>
+              <Metric label="Confirmed bank deposits" value="$0" detail="Empty-state placeholder · bank deposits require separate confirmation"/>
             </div>
             <p className="payouts-note">Your first Payments report has been reviewed and is empty. Future payment records will use the sales period, marketplace, payment number, payment date and status, withholding, Amazon’s FX rate, payout currency, and payout amount. Unpaid balance and next payout are not calculated from this empty report. Bank arrival dates require separate confirmation.</p>
             <p className="payouts-note">Amazon generally pays monthly, approximately 60 days after the end of the month in which sales were reported, or 90 days for Expanded Distribution, subject to applicable payment requirements. Bank processing can add time. These are timing guidelines, not a promised deposit date.</p>
@@ -61,7 +61,7 @@ export default function Dashboard({snapshot}:{snapshot:Snapshot|null}) {
             <p><a className="payouts-link" href="https://drive.google.com/drive/folders/1HwwXhVnBAxzuhAYVW_9bvr4RoujhCjxM" target="_blank" rel="noopener noreferrer">Payment Reports archive <ExternalLink size={14}/></a></p>
             <span className="pending-badge">Report format verified · automatic payment imports not active</span>
           </div>
-        </details>
+        </section>
       </div><footer><div className="brand-mark small">FS</div><p>FROM SCRATCH · SALES REPORTING</p><span>Built for the story behind the numbers.</span></footer>
     </main>
   </div>;

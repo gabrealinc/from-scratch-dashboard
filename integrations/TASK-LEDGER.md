@@ -2,6 +2,8 @@
 
 ## Scope update, latest user decision
 
+Amazon payouts is permanently visible, not collapsible. Payments issued and confirmed deposits display $0 as explicitly labeled empty-state placeholders until real payment/deposit data is connected. This does not imply payment ingestion is active or bank deposits are verified.
+
 Data health section and its navigation link removed at user request. This is presentation-only: storage, FX rules, sync endpoint, and outstanding import setup are unchanged.
 
 Dashboard is now Amazon-export-only: sales, royalties, 50/50 split, daily/cumulative sales, and payments. Unconnected rankings, reviews, social, website, attribution, and marketing boxes are removed. Earlier integration proposals below are superseded, not pending work. No scrapers, paid data providers, or social APIs unless explicitly reopened.
