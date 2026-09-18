@@ -2,6 +2,8 @@
 
 ## Scope update, latest user decision
 
+Data health section and its navigation link removed at user request. This is presentation-only: storage, FX rules, sync endpoint, and outstanding import setup are unchanged.
+
 Dashboard is now Amazon-export-only: sales, royalties, 50/50 split, daily/cumulative sales, and payments. Unconnected rankings, reviews, social, website, attribution, and marketing boxes are removed. Earlier integration proposals below are superseded, not pending work. No scrapers, paid data providers, or social APIs unless explicitly reopened.
 
 Active remaining steps: complete and test Google folder-import authorization/trigger; implement Payments report ingestion using verified template and validate actual status/FX fields when records arrive; update Notion SOP to simplified scope; verify dashboard custom DNS without changing the GHL landing page; review other straightforward Amazon exports only when supplied. Bank deposit confirmation remains separate, and automatic sales/payment folder imports are not active yet.

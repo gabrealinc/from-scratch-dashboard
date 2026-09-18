@@ -23,7 +23,7 @@ export default function Dashboard({snapshot}:{snapshot:Snapshot|null}) {
   }
   const totals=snapshot?.totals;
   const fmt=(v:number|undefined)=>v===undefined?"Not available":money.format(v);
-  const nav=["Overview","Sales","Payouts","Data health"];
+  const nav=["Overview","Sales","Payouts"];
   return <div className="app-shell">
     <aside className={menu?"sidebar open":"sidebar"}>
       <div className="sidebar-head"><div className="brand-mark">FS</div><button className="icon-button close" onClick={()=>setMenu(false)} aria-label="Close menu"><X/></button></div>
@@ -62,7 +62,6 @@ export default function Dashboard({snapshot}:{snapshot:Snapshot|null}) {
             <span className="pending-badge">Report format verified · automatic payment imports not active</span>
           </div>
         </details>
-        <section className="panel sources" id="data-health"><Title kicker="Data health" title="The reporting pipeline" aside={<a className="report-link" href="https://docs.google.com/spreadsheets/d/1y0I6R_wP0d8p6diFDZbJcAuJicLt5BziOwJOpi4Ub08/edit" target="_blank" rel="noopener noreferrer">Running report <ExternalLink size={14}/></a>}/><div className="pipeline"><div>KDP exports<small>Drive raw archive</small></div><span>→</span><div>Running report<small>Normalized + cumulative</small></div><span>→</span><div>Private data store<small>Verified reporting snapshot</small></div><span>→</span><div>From Scratch<small>Refreshes view every minute</small></div></div><div className="source-table"><div><p>KDP + running report</p><span><i/>{snapshot?"Imported successfully":"Awaiting import"}</span><small>{snapshot?.reports.length??0} exports</small></div><div><p>Automatic folder imports</p><span><i/>Google setup required</span><small>Cloud trigger</small></div><div><p>KDP Payments report</p><span><i/>First report empty</span><small>Automatic import pending</small></div></div>{snapshot?.currencies.map(c=><p className="currency-note" key={c.currency}>{c.currency}: {c.royalty.toFixed(2)} original-currency royalties · {c.copies} paid copies. Included in USD totals after conversion.</p>)}</section>
       </div><footer><div className="brand-mark small">FS</div><p>FROM SCRATCH · SALES REPORTING</p><span>Built for the story behind the numbers.</span></footer>
     </main>
   </div>;
