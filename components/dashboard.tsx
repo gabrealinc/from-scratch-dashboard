@@ -53,14 +53,16 @@ export default function Dashboard({snapshot}:{snapshot:Snapshot|null}) {
           <div className="payouts-content">
             <p className="payouts-intro">Royalties earned are not the same as money paid into your bank. This section tracks actual Amazon payments without changing the sales totals or 50/50 royalty split above.</p>
             <div className="payouts-grid">
-              <Metric label="Reported royalties · USD" value={fmt(totals?.royalties)} detail="Earned proceeds in imported KDP sales reports, not confirmed cash received"/>
-              <Metric label="Amazon payments issued" value="Not available" detail="Requires KDP Payments report; no payment history imported"/>
+              <Metric label="Royalty equivalent · USD" value={fmt(totals?.royalties)} detail="Earned proceeds in imported KDP sales reports, not confirmed cash received"/>
+              <Metric label="Amazon payments issued" value="No payouts reported" detail="The first Payments report contains headers only; no payment records yet"/>
               <Metric label="Confirmed bank deposits" value="Not available" detail="Requires deposit confirmation; an issued payment is not a verified bank receipt"/>
             </div>
-            <p className="payouts-note">Unpaid balance and next payout are not calculated yet because payment history is missing. Payment dates, royalty periods, marketplace, currency, tax withholding, and payment amounts belong here once the Payments report is connected. Bank arrival dates will be confirmed separately.</p>
+            <p className="payouts-note">Your first Payments report has been reviewed and is empty. Future payment records will use the sales period, marketplace, payment number, payment date and status, withholding, Amazon’s FX rate, payout currency, and payout amount. Unpaid balance and next payout are not calculated from this empty report. Bank arrival dates require separate confirmation.</p>
             <p className="payouts-note">Amazon generally pays monthly, approximately 60 days after the end of the month in which sales were reported, or 90 days for Expanded Distribution, subject to applicable payment requirements. Bank processing can add time. These are timing guidelines, not a promised deposit date.</p>
             <a className="payouts-link" href="https://kdp.amazon.com/en_US/help/topic/GK2MKZUL6U3SFBPZ" target="_blank" rel="noopener noreferrer">Amazon payment timing <ExternalLink size={14}/></a>
-            <span className="pending-badge">Awaiting KDP Payments report</span>
+            <p><a className="payouts-link" href="https://docs.google.com/spreadsheets/d/1F8EEUwqdGs828ITeImBP5zavfW4MWoJxTjF9-Jfhuh8/edit" target="_blank" rel="noopener noreferrer">First Payments report <ExternalLink size={14}/></a></p>
+            <p><a className="payouts-link" href="https://drive.google.com/drive/folders/1HwwXhVnBAxzuhAYVW_9bvr4RoujhCjxM" target="_blank" rel="noopener noreferrer">Payment Reports archive <ExternalLink size={14}/></a></p>
+            <span className="pending-badge">Report format verified · automatic payment imports not active</span>
           </div>
         </details>
         <div id="attribution" className="two-col"><Pending kicker="Amazon Attribution" title="From attention to purchase">Detail-page views, add-to-cart events, and attributed purchases will appear when Amazon Attribution is connected. Website clicks alone are not purchases.</Pending><Pending kicker="Amazon position" title="Category rankings + milestones">Rankings and bestseller milestones will appear when the Amazon-data adapter is connected.</Pending></div>
