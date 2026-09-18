@@ -2,6 +2,8 @@
 
 ## Scope update, latest user decision
 
+Removed all links from the Amazon payouts display, including payment timing, sample report, and archive. Original report files and integration references remain intact.
+
 Amazon payouts is permanently visible, not collapsible. Payments issued and confirmed deposits display $0 as explicitly labeled empty-state placeholders until real payment/deposit data is connected. This does not imply payment ingestion is active or bank deposits are verified.
 
 Data health section and its navigation link removed at user request. This is presentation-only: storage, FX rules, sync endpoint, and outstanding import setup are unchanged.

@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Download, ExternalLink, Menu, RefreshCw, X } from "lucide-react";
+import { Download, Menu, RefreshCw, X } from "lucide-react";
 import type { Snapshot } from "@/lib/reporting";
 const money=new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2});
 function Metric({label,value,detail,accent=false}:{label:string;value:string;detail:string;accent?:boolean}) {
@@ -56,9 +56,6 @@ export default function Dashboard({snapshot}:{snapshot:Snapshot|null}) {
             </div>
             <p className="payouts-note">Your first Payments report has been reviewed and is empty. Future payment records will use the sales period, marketplace, payment number, payment date and status, withholding, Amazon’s FX rate, payout currency, and payout amount. Unpaid balance and next payout are not calculated from this empty report. Bank arrival dates require separate confirmation.</p>
             <p className="payouts-note">Amazon generally pays monthly, approximately 60 days after the end of the month in which sales were reported, or 90 days for Expanded Distribution, subject to applicable payment requirements. Bank processing can add time. These are timing guidelines, not a promised deposit date.</p>
-            <a className="payouts-link" href="https://kdp.amazon.com/en_US/help/topic/GK2MKZUL6U3SFBPZ" target="_blank" rel="noopener noreferrer">Amazon payment timing <ExternalLink size={14}/></a>
-            <p><a className="payouts-link" href="https://docs.google.com/spreadsheets/d/1F8EEUwqdGs828ITeImBP5zavfW4MWoJxTjF9-Jfhuh8/edit" target="_blank" rel="noopener noreferrer">First Payments report <ExternalLink size={14}/></a></p>
-            <p><a className="payouts-link" href="https://drive.google.com/drive/folders/1HwwXhVnBAxzuhAYVW_9bvr4RoujhCjxM" target="_blank" rel="noopener noreferrer">Payment Reports archive <ExternalLink size={14}/></a></p>
             <span className="pending-badge">Report format verified · automatic payment imports not active</span>
           </div>
         </section>
