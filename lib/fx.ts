@@ -1,4 +1,4 @@
-import type { Snapshot } from "./reporting.ts";
+import type { Snapshot, Sale } from "./reporting.ts";
 export type FxRate = {date:string;rate:number;source:string};
 const cents=(n:number)=>Math.round((n+Number.EPSILON)*100)/100;
 export async function referenceRate(currency:string,date:string):Promise<FxRate> {
@@ -12,7 +12,7 @@ export async function referenceRate(currency:string,date:string):Promise<FxRate>
 }
 export async function convertToUsd(snapshot:Snapshot,resolve=referenceRate):Promise<Snapshot> {
   const rates=new Map<string,FxRate>();
-  const sales=[];
+  const sales:(Sale & {fx:FxRate;retailUsd:number;royaltyUsd:number;manufacturingUsd:number;feesUsd:number})[]=[];
   for(const sale of snapshot.sales){
     const key=`${sale.currency}:${sale.date}`;
     let fx=rates.get(key);
