@@ -2,6 +2,8 @@
 
 ## Scope update, latest user decision
 
+Removed the visible Payments import-status badge at user request. Outstanding automatic payment-ingestion work remains recorded here, not displayed in the dashboard.
+
 Removed all links from the Amazon payouts display, including payment timing, sample report, and archive. Original report files and integration references remain intact.
 
 Amazon payouts is permanently visible, not collapsible. Payments issued and confirmed deposits display $0 as explicitly labeled empty-state placeholders until real payment/deposit data is connected. This does not imply payment ingestion is active or bank deposits are verified.

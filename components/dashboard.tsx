@@ -56,7 +56,6 @@ export default function Dashboard({snapshot}:{snapshot:Snapshot|null}) {
             </div>
             <p className="payouts-note">Your first Payments report has been reviewed and is empty. Future payment records will use the sales period, marketplace, payment number, payment date and status, withholding, Amazon’s FX rate, payout currency, and payout amount. Unpaid balance and next payout are not calculated from this empty report. Bank arrival dates require separate confirmation.</p>
             <p className="payouts-note">Amazon generally pays monthly, approximately 60 days after the end of the month in which sales were reported, or 90 days for Expanded Distribution, subject to applicable payment requirements. Bank processing can add time. These are timing guidelines, not a promised deposit date.</p>
-            <span className="pending-badge">Report format verified · automatic payment imports not active</span>
           </div>
         </section>
       </div><footer><div className="brand-mark small">FS</div><p>FROM SCRATCH · SALES REPORTING</p><span>Built for the story behind the numbers.</span></footer>
