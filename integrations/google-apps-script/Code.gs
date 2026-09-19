@@ -83,7 +83,7 @@ function syncFromScratchReports() {
     Object.keys(prepared.plan).forEach(name => {
       const rows = prepared.plan[name];
       const actual = master.getSheetByName(name).getRange(1,1,rows.length,rows[0].length).getValues();
-      if (JSON.stringify(actual) !== JSON.stringify(rows)) throw new Error('Readback mismatch in ' + name + '. Dashboard was not updated.');
+      if (!fsValuesEqual(actual, rows, master.getSpreadsheetTimeZone())) throw new Error('Readback mismatch in ' + name + '. Dashboard was not updated.');
     });
     fsCall({phase:'commit',reports:reports,sheetVerified:true});
     const log = master.getSheetByName('Import Log');
@@ -91,6 +91,20 @@ function syncFromScratchReports() {
     properties.setProperty('LAST_SUCCESSFUL_SOURCE_SIGNATURE', signature);
     properties.setProperty('LAST_SUCCESSFUL_SYNC', new Date().toISOString());
   } finally { lock.releaseLock(); }
+}
+function fsValuesEqual(actual, expected, timeZone) {
+  const normalize = (value, planned) => {
+    if (value instanceof Date && typeof planned === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(planned)) {
+      return Utilities.formatDate(value, timeZone, 'yyyy-MM-dd');
+    }
+    if (typeof value === 'number' && typeof planned === 'string') {
+      if (/^\d+(?:\.\d+)?%$/.test(planned)) return String(value * 100).replace(/\.0+$/, '') + '%';
+      if (/^\d{10,}$/.test(planned)) return String(value);
+    }
+    return value;
+  };
+  if (actual.length !== expected.length) return false;
+  return actual.every((row, r) => row.length === expected[r].length && row.every((value, c) => normalize(value, expected[r][c]) === expected[r][c]));
 }
 function fsCall(body) {
   const secret = PropertiesService.getScriptProperties().getProperty('SYNC_SECRET');
