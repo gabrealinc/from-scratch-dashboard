@@ -8,4 +8,4 @@ Never add overlapping export totals together. The latest matching KDP aggregate 
 
 USD equivalents are reporting estimates, not Amazon's actual conversion or a bank payout. Actual payments and withholding require separate KDP Payments records. Rate requests send only currency/date, not sales records or customer data.
 
-Pipeline: archive raw Drive exports, normalize and deduplicate, convert to USD, prepare generated Sheets tabs, read back every written cell, then commit the private dashboard snapshot. The authorized Google Apps Script checks the Exports folder every 15 minutes and runs this pipeline when a file is added or modified.
+Pipeline: archive raw Drive exports, normalize and deduplicate, convert to USD, prepare generated Sheets tabs, read back every written cell, then commit the private dashboard snapshot. The authorized Google Apps Script checks both the Sales Exports and Payment Reports folders every 15 minutes and runs this pipeline when a file is added or modified.

@@ -20,3 +20,11 @@ test("accepts previous business-day rate but rejects stale, future, zero, and un
   for(const fx of [{date:"2026-09-18",rate:0.7,source:"Test"},{date:"2026-09-01",rate:0.7,source:"Test"},{date:"2026-09-17",rate:0,source:"Test"}])await assert.rejects(convertToUsd(buildSnapshot([report]),async()=>fx));
   await assert.rejects(convertToUsd(buildSnapshot([report]),async()=>{throw new Error("Unavailable");}));
 });
+test("converts non-USD payouts separately from earned royalties",async()=>{
+  const paymentHeaders=["Sales Period - Start Date","Sales Period - End Date","Marketplace","Payment Number","Detail","Date","Payment Method","Currency","Accrued Royalty","Tax Withholding","Net Earnings","Source","FX Rate","Currency","Payout Amount","Payment Status"];
+  const payments={id:"payments",name:"Payments",modifiedTime:"2026-09-18T00:00:00Z",tables:{Payments:[paymentHeaders,["2026-07-01","2026-07-31","Amazon.ca","P-1","Royalty","2026-09-17","EFT","CAD",20,1,19,"KDP",1,"CAD",19,"Paid"]]}};
+  const result=await convertToUsd(buildSnapshot([report],[payments]),async()=>({date:"2026-09-17",rate:0.71453,source:"Test rate"}));
+  assert.equal(result.payouts?.totalUsd,13.58);
+  assert.equal(result.totals.royalties,25.93);
+  assert.equal(sheetPlan(result)["Payout Summary"][1][1],13.58);
+});

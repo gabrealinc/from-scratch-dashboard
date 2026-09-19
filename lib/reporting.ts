@@ -1,4 +1,5 @@
 export type RawReport = { id: string; name: string; modifiedTime: string; tables: Record<string, (string | number)[][]> };
+export type RawPaymentReport = RawReport;
 export type Sale = {
   date: string; orderDate: string; title: string; author: string; bookId: string;
   marketplace: string; format: string; royaltyType: string; transactionType: string;
@@ -8,9 +9,20 @@ export type Sale = {
   fx?: {date:string; rate:number; source:string};
   retailUsd?:number; manufacturingUsd?:number; feesUsd?:number; royaltyUsd?:number;
 };
+export type Payment = {
+  salesStart: string; salesEnd: string; marketplace: string; paymentNumber: string;
+  detail: string; paymentDate: string; paymentMethod: string; royaltyCurrency: string;
+  accruedRoyalty: number; taxWithholding: number; netEarnings: number; source: string;
+  amazonFxRate: number | null; payoutCurrency: string; payoutAmount: number; paymentStatus: string;
+  sourceId: string; sourceModifiedAt: string;
+  payoutFx?: {date:string; rate:number; source:string}; payoutUsd?: number;
+};
 export type Snapshot = { version: 1; syncedAt: string; latestDate: string; sales: Sale[];
   usdConverted?: boolean;
   reports: { id: string; name: string; modifiedTime: string }[];
+  payments?: Payment[];
+  paymentReports?: { id: string; name: string; modifiedTime: string }[];
+  payouts?: { count: number; totalUsd: number; latestPaymentDate: string };
   totals: { copies: number; gross: number; fees: number; manufacturing: number; royalties: number };
   currencies: { currency: string; royalty: number; copies: number }[];
   daily: { date: string; daily: number; cumulative: number }[];
@@ -18,7 +30,8 @@ export type Snapshot = { version: 1; syncedAt: string; latestDate: string; sales
 export const salesHeaders = ["Royalty date", "Order date", "Title", "Author", "Book ID", "Marketplace", "Format", "Royalty type", "Transaction type", "Units sold", "Units refunded", "Net units", "Retail value estimate", "Printing / delivery cost estimate", "KDP royalty", "Currency", "Source file ID", "Source modified at"];
 const cents = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 const key = (r: Sale) => JSON.stringify([r.date,r.orderDate,r.bookId,r.marketplace,r.format,r.royaltyType,r.transactionType,r.currency]);
-export function buildSnapshot(reports: RawReport[]): Snapshot {
+const paymentKey = (r: Payment) => JSON.stringify([r.paymentNumber,r.marketplace,r.source,r.salesStart,r.salesEnd,r.payoutCurrency]);
+export function buildSnapshot(reports: RawReport[], paymentReports: RawPaymentReport[] = []): Snapshot {
   if (!Array.isArray(reports) || !reports.length) throw new Error("No reports supplied. Existing data was not changed.");
   const all = new Map<string, Sale>();
   for (const report of [...reports].sort((a,b)=>a.modifiedTime.localeCompare(b.modifiedTime)||a.id.localeCompare(b.id))) {
@@ -66,14 +79,55 @@ export function buildSnapshot(reports: RawReport[]): Snapshot {
   for (const r of sales) byDay.set(r.date,(byDay.get(r.date)??0)+r.netUnits);
   let cumulative=0;
   const daily=[...byDay].sort(([a],[b])=>a.localeCompare(b)).map(([date,value])=>({date,daily:value,cumulative:cumulative+=value}));
-  return {version:1,syncedAt:new Date().toISOString(),latestDate:daily.at(-1)?.date??"",sales,reports:reports.map(({id,name,modifiedTime})=>({id,name,modifiedTime})),totals:{copies:sum(sales,"netUnits"),gross:sum(usd,"retailValue"),fees:cents(sum(usd,"retailValue")-sum(usd,"royalty")),manufacturing:sum(usd,"manufacturingCost"),royalties:sum(usd,"royalty")},currencies:[...new Set(sales.map(r=>r.currency))].sort().map(currency=>({currency,royalty:sum(sales.filter(r=>r.currency===currency),"royalty"),copies:sum(sales.filter(r=>r.currency===currency),"netUnits")})),daily};
+  const payments = buildPayments(paymentReports);
+  return {version:1,syncedAt:new Date().toISOString(),latestDate:daily.at(-1)?.date??"",sales,reports:reports.map(({id,name,modifiedTime})=>({id,name,modifiedTime})),payments,paymentReports:paymentReports.map(({id,name,modifiedTime})=>({id,name,modifiedTime})),payouts:{count:payments.length,totalUsd:cents(payments.filter(r=>r.payoutCurrency==="USD").reduce((n,r)=>n+r.payoutAmount,0)),latestPaymentDate:payments.map(r=>r.paymentDate).sort().at(-1)??""},totals:{copies:sum(sales,"netUnits"),gross:sum(usd,"retailValue"),fees:cents(sum(usd,"retailValue")-sum(usd,"royalty")),manufacturing:sum(usd,"manufacturingCost"),royalties:sum(usd,"royalty")},currencies:[...new Set(sales.map(r=>r.currency))].sort().map(currency=>({currency,royalty:sum(sales.filter(r=>r.currency===currency),"royalty"),copies:sum(sales.filter(r=>r.currency===currency),"netUnits")})),daily};
+}
+function buildPayments(reports: RawPaymentReport[]): Payment[] {
+  const all = new Map<string, Payment>();
+  for (const report of [...reports].sort((a,b)=>a.modifiedTime.localeCompare(b.modifiedTime)||a.id.localeCompare(b.id))) {
+    if (!report.id || !report.name || !Number.isFinite(Date.parse(report.modifiedTime))) throw new Error("Invalid payment report metadata.");
+    const table = report.tables.Payments;
+    if (!table?.length) throw new Error(`Unsupported KDP Payments export: ${report.name}. Expected a Payments tab.`);
+    const headers = table[0].map(String);
+    const positions = (name:string) => headers.flatMap((header,index)=>header===name?[index]:[]);
+    const idx = (name:string) => headers.indexOf(name);
+    const currencyPositions = positions("Currency");
+    for (const name of ["Sales Period - Start Date","Sales Period - End Date","Marketplace","Payment Number","Detail","Date","Payment Method","Accrued Royalty","Tax Withholding","Net Earnings","Source","FX Rate","Payout Amount","Payment Status"]) {
+      if (idx(name) < 0) throw new Error(`Missing ${name} in ${report.name} / Payments. No partial import allowed.`);
+    }
+    if (currencyPositions.length !== 2) throw new Error(`Expected two Currency columns in ${report.name} / Payments.`);
+    for (const values of table.slice(1)) {
+      if (!values.some(value=>value!==""&&value!==null)) continue;
+      const s = (index:number) => String(values[index] ?? "").trim();
+      const n = (name:string) => {
+        const value=values[idx(name)];
+        if(value===""||value===undefined||!Number.isFinite(Number(value))) throw new Error(`Invalid ${name} in ${report.name}`);
+        return Number(value);
+      };
+      const amazonFxValue=values[idx("FX Rate")];
+      const amazonFxRate=amazonFxValue===""||amazonFxValue===undefined?null:Number(amazonFxValue);
+      if(amazonFxRate!==null&&!Number.isFinite(amazonFxRate)) throw new Error(`Invalid FX Rate in ${report.name}`);
+      const row:Payment={salesStart:s(idx("Sales Period - Start Date")),salesEnd:s(idx("Sales Period - End Date")),marketplace:s(idx("Marketplace")),paymentNumber:s(idx("Payment Number")),detail:s(idx("Detail")),paymentDate:s(idx("Date")),paymentMethod:s(idx("Payment Method")),royaltyCurrency:s(currencyPositions[0]),accruedRoyalty:n("Accrued Royalty"),taxWithholding:n("Tax Withholding"),netEarnings:n("Net Earnings"),source:s(idx("Source")),amazonFxRate,payoutCurrency:s(currencyPositions[1]),payoutAmount:n("Payout Amount"),paymentStatus:s(idx("Payment Status")),sourceId:report.id,sourceModifiedAt:report.modifiedTime};
+      if(!row.paymentNumber||!row.marketplace||!row.source||!row.payoutCurrency||!row.royaltyCurrency) throw new Error(`Incomplete payment identity in ${report.name}.`);
+      if(![row.salesStart,row.salesEnd,row.paymentDate].every(date=>/^\d{4}-\d{2}-\d{2}$/.test(date)&&Number.isFinite(Date.parse(date)))) throw new Error(`Payment dates must be ISO dates in ${report.name}.`);
+      if(!/^[A-Z]{3}$/.test(row.royaltyCurrency)||!/^[A-Z]{3}$/.test(row.payoutCurrency)) throw new Error(`Invalid payment currency in ${report.name}.`);
+      if(row.payoutAmount<0) throw new Error(`Negative payout amount in ${report.name}.`);
+      all.set(paymentKey(row),row);
+    }
+  }
+  return [...all.values()].sort((a,b)=>paymentKey(a).localeCompare(paymentKey(b))).map(row=>({...row,accruedRoyalty:cents(row.accruedRoyalty),taxWithholding:cents(row.taxWithholding),netEarnings:cents(row.netEarnings),payoutAmount:cents(row.payoutAmount)}));
 }
 export function sheetPlan(snapshot: Snapshot) {
   const headers = snapshot.usdConverted ? [...salesHeaders,"FX rate date","USD per original currency unit","FX source","Retail value (USD)","Printing / delivery (USD)","Amazon printing + fees (USD)","KDP royalty (USD)"] : salesHeaders;
+  const paymentHeaders=["Sales period start","Sales period end","Marketplace","Payment number","Detail","Payment date","Payment method","Royalty currency","Accrued royalty","Tax withholding","Net earnings","Source","Amazon FX rate","Payout currency","Payout amount","Payment status","Source file ID","Source modified at","FX rate date","USD per payout currency unit","FX source","Payout amount (USD)"];
+  const payments=snapshot.payments??[], paymentReports=snapshot.paymentReports??[], payouts=snapshot.payouts??{count:0,totalUsd:0,latestPaymentDate:""};
   return {
     "Sales Master":[headers,...snapshot.sales.map(r=>[r.date,r.orderDate,r.title,r.author,r.bookId,r.marketplace,r.format,r.royaltyType,r.transactionType,r.sold,r.refunded,r.netUnits,r.retailValue,r.manufacturingCost,r.royalty,r.currency,r.sourceId,r.sourceModifiedAt,...(snapshot.usdConverted?[r.fx!.date,r.fx!.rate,r.fx!.source,r.retailUsd!,r.manufacturingUsd!,r.feesUsd!,r.royaltyUsd!]:[])])],
     "Import Log":[["Source file ID","File name","Source modified at","Last successful sync","Status"],...snapshot.reports.map(r=>[r.id,r.name,r.modifiedTime,snapshot.syncedAt,"Synced"])],
     "Dashboard Summary":[["Metric","Value","Definition"],["Paid copies",snapshot.totals.copies,"Net paid units across currencies, royalty-date basis"],["Retail value estimate (USD)",snapshot.totals.gross,"KDP average offer price without tax × net units; all currencies converted to USD when FX is enabled"],["Amazon printing + fees (USD)",snapshot.totals.fees,"USD retail estimate less USD royalty; includes Amazon share and printing/delivery"],["Printing / delivery component (USD)",snapshot.totals.manufacturing,"Reported average cost × net units, converted to USD; already included in Amazon fees"],["KDP royalty equivalent (USD)",snapshot.totals.royalties,"All currencies converted at dated reference rates; reporting estimate, not actual bank payout"],["Gabby 50% (USD)",snapshot.totals.royalties/2,"50% of combined USD royalty equivalent"],["Ryan 50% (USD)",snapshot.totals.royalties/2,"50% of combined USD royalty equivalent"],["Updated",snapshot.syncedAt,"Latest successful source import"],["Latest royalty date",snapshot.latestDate,"Not necessarily the customer's order date"]],
-    "Daily Sales":[["Royalty date","Net paid units","Cumulative paid units"],...snapshot.daily.map(r=>[r.date,r.daily,r.cumulative])]
+    "Daily Sales":[["Royalty date","Net paid units","Cumulative paid units"],...snapshot.daily.map(r=>[r.date,r.daily,r.cumulative])],
+    "Payments Master":[paymentHeaders,...payments.map(r=>[r.salesStart,r.salesEnd,r.marketplace,r.paymentNumber,r.detail,r.paymentDate,r.paymentMethod,r.royaltyCurrency,r.accruedRoyalty,r.taxWithholding,r.netEarnings,r.source,r.amazonFxRate??"",r.payoutCurrency,r.payoutAmount,r.paymentStatus,r.sourceId,r.sourceModifiedAt,r.payoutFx?.date??"",r.payoutFx?.rate??"",r.payoutFx?.source??"",r.payoutUsd??""])],
+    "Payments Import Log":[["Source file ID","File name","Source modified at","Last successful sync","Rows imported","Status"],...paymentReports.map(r=>[r.id,r.name,r.modifiedTime,snapshot.syncedAt,payments.filter(p=>p.sourceId===r.id).length,"Synced"])],
+    "Payout Summary":[["Metric","Value","Definition"],["Amazon-reported payouts (USD)",payouts.totalUsd,"Sum of payment-report payout amounts converted to USD; separate from earned royalties"],["Payment records",payouts.count,"Deduplicated rows from KDP Payments exports"],["Latest payment date",payouts.latestPaymentDate,"Blank until Amazon reports a payment"],["Confirmed bank deposits (USD)",0,"Requires separate bank confirmation and is not inferred from KDP reports"],["Updated",snapshot.syncedAt,"Latest successful combined sales and payments sync"]]
   };
 }

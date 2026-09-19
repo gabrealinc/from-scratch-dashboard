@@ -22,6 +22,7 @@ export default function Dashboard({snapshot}:{snapshot:Snapshot|null}) {
     const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download="from-scratch-sales.json";link.click();URL.revokeObjectURL(url);
   }
   const totals=snapshot?.totals;
+  const payouts=snapshot?.payouts;
   const fmt=(v:number|undefined)=>v===undefined?"Not available":money.format(v);
   const nav=["Overview","Sales","Payouts"];
   return <div className="app-shell">
@@ -51,10 +52,10 @@ export default function Dashboard({snapshot}:{snapshot:Snapshot|null}) {
             <p className="payouts-intro">Royalties earned are not the same as money paid into your bank. This section tracks actual Amazon payments without changing the sales totals or 50/50 royalty split above.</p>
             <div className="payouts-grid">
               <Metric label="Royalty equivalent · USD" value={fmt(totals?.royalties)} detail="Earned proceeds in imported KDP sales reports, not confirmed cash received"/>
-              <Metric label="Amazon payments issued" value="$0" detail="Empty-report placeholder · no payment records yet"/>
+              <Metric label="Amazon-reported payouts" value={fmt(payouts?.totalUsd??0)} detail={payouts?.count?`${payouts.count} payment record${payouts.count===1?"":"s"} · separate from earned royalties`:"No payment records reported yet"}/>
               <Metric label="Confirmed bank deposits" value="$0" detail="Empty-state placeholder · bank deposits require separate confirmation"/>
             </div>
-            <p className="payouts-note">Your first Payments report has been reviewed and is empty. Future payment records will use the sales period, marketplace, payment number, payment date and status, withholding, Amazon’s FX rate, payout currency, and payout amount. Unpaid balance and next payout are not calculated from this empty report. Bank arrival dates require separate confirmation.</p>
+            <p className="payouts-note">{payouts?.count?`Payment reports are combined automatically. Latest reported payment date: ${payouts.latestPaymentDate}. Payment status, withholding, Amazon’s FX rate, payout currency, and original amounts remain available in the running report.`:"The current Payments report is empty. New reports will be combined automatically using the sales period, marketplace, payment number, payment date and status, withholding, Amazon’s FX rate, payout currency, and payout amount."} Unpaid balance and the next payout are not estimated. Bank arrival dates require separate confirmation.</p>
             <p className="payouts-note">Amazon generally pays monthly, approximately 60 days after the end of the month in which sales were reported, or 90 days for Expanded Distribution, subject to applicable payment requirements. Bank processing can add time. These are timing guidelines, not a promised deposit date.</p>
           </div>
         </section>

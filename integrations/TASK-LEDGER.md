@@ -12,7 +12,7 @@ Data health section and its navigation link removed at user request. This is pre
 
 Dashboard is now Amazon-export-only: sales, royalties, 50/50 split, daily/cumulative sales, and payments. Unconnected rankings, reviews, social, website, attribution, and marketing boxes are removed. Earlier integration proposals below are superseded, not pending work. No scrapers, paid data providers, or social APIs unless explicitly reopened.
 
-Active remaining steps: implement Payments report ingestion using the verified template and validate actual status/FX fields when records arrive; update the Notion SOP to the simplified scope; verify dashboard custom DNS without changing the GHL landing page; review other straightforward Amazon exports only when supplied. Bank deposit confirmation remains separate. Automatic sales imports are active; payment imports are not.
+Active remaining steps: validate actual payment-status values and Amazon FX direction when the first populated report arrives; verify dashboard custom DNS without changing the GHL landing page; review other straightforward Amazon exports only when supplied. Bank deposit confirmation remains separate. Automatic sales and payment imports are active.
 
 Maintain this record throughout the user's quick-fire task batch. At the end, provide one clean next-steps list in the chat, separating completed work from deferred items. Do not claim a placeholder or reviewed template is a working automatic integration.
 
@@ -29,7 +29,7 @@ Maintain this record throughout the user's quick-fire task batch. At the end, pr
 
 ## Deferred next steps
 
-1. Implement payment import/storage and Google folder scanning using KDP-PAYMENTS-MAPPING.md. Validate actual status values and Amazon FX direction when the first populated report arrives. Bank deposit confirmation remains separate.
+1. Validate actual status values and Amazon FX direction when the first populated payment report arrives. Bank deposit confirmation remains separate.
 2. Update the Notion Sales Dashboard SOP to reflect the simplified scope and active automatic sales import.
 3. Confirm DNS for sales.readfromscratch.com without altering the public landing-page domain. Verify access/privacy expectations: the dashboard currently has no viewer authentication.
 4. Review additional straightforward Amazon exports only when the user supplies them.

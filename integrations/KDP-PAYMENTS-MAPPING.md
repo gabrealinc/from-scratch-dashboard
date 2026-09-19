@@ -4,7 +4,7 @@ Verified sample: https://docs.google.com/spreadsheets/d/1F8EEUwqdGs828ITeImBP5za
 
 Raw archive: https://drive.google.com/drive/folders/1HwwXhVnBAxzuhAYVW_9bvr4RoujhCjxM
 
-The first sample is header-only, with no payment records. It is a schema reference, not evidence of a bank deposit or a complete lifetime payment history. Automatic payment ingestion is not implemented or authorized yet.
+The first sample is header-only, with no payment records. It is a schema reference, not evidence of a bank deposit or a complete lifetime payment history. Automatic payment ingestion is active through the same 15-minute Google Apps Script trigger used for sales exports.
 
 ## Observed columns, in order
 
@@ -26,7 +26,7 @@ The first sample is header-only, with no payment records. It is a schema referen
 16. Payout Amount
 17. Payment Status
 
-## Required rules for a future payment importer
+## Required importer rules
 
 - Keep payment records separate from sales rows and royalty totals. Never add payout amounts to book revenue or subtract a payout from earned royalties.
 - Keep original report files intact. Preserve source ID, modified date, report date coverage, both currency fields, all original values, and payment status.
@@ -43,4 +43,4 @@ The first sample is header-only, with no payment records. It is a schema referen
 
 ## Dashboard placement
 
-Use the collapsed Amazon payouts section below Sales Velocity. Link to the report and archive. Display the verified first report as empty and keep bank deposits unknown. The overview's copies, gross estimate, fees, royalties, and Gabby/Ryan split remain unchanged.
+Use the permanently expanded Amazon payouts section below Sales Velocity. Display Amazon-reported payouts from the cumulative payment master and keep confirmed bank deposits at zero until separate bank evidence exists. The overview's copies, gross estimate, fees, royalties, and Gabby/Ryan split remain unchanged.

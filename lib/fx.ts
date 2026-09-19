@@ -1,4 +1,4 @@
-import type { Snapshot, Sale } from "./reporting.ts";
+import type { Snapshot, Sale, Payment } from "./reporting.ts";
 export type FxRate = {date:string;rate:number;source:string};
 const cents=(n:number)=>Math.round((n+Number.EPSILON)*100)/100;
 export async function referenceRate(currency:string,date:string):Promise<FxRate> {
@@ -25,6 +25,18 @@ export async function convertToUsd(snapshot:Snapshot,resolve=referenceRate):Prom
     const retailUsd=cents(sale.retailValue*fx.rate),royaltyUsd=cents(sale.royalty*fx.rate);
     sales.push({...sale,fx,retailUsd,royaltyUsd,manufacturingUsd:cents(sale.manufacturingCost*fx.rate),feesUsd:cents(retailUsd-royaltyUsd)});
   }
+  const payments:(Payment & {payoutFx:FxRate;payoutUsd:number})[]=[];
+  for(const payment of snapshot.payments??[]){
+    const key=`${payment.payoutCurrency}:${payment.paymentDate}`;
+    let fx=rates.get(key);
+    if(!fx){
+      fx=payment.payoutCurrency==="USD"?{date:payment.paymentDate,rate:1,source:"USD identity"}:await resolve(payment.payoutCurrency,payment.paymentDate);
+      const age=Date.parse(payment.paymentDate)-Date.parse(fx.date);
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(fx.date)||!Number.isFinite(age)||age<0||age>7*86400000||!Number.isFinite(fx.rate)||fx.rate<=0||!fx.source)throw new Error(`Invalid or stale FX rate for ${key}. Import stopped.`);
+      rates.set(key,fx);
+    }
+    payments.push({...payment,payoutFx:fx,payoutUsd:cents(payment.payoutAmount*fx.rate)});
+  }
   const sum=(field:"retailUsd"|"royaltyUsd"|"manufacturingUsd")=>cents(sales.reduce((n,r)=>n+r[field],0));
-  return {...snapshot,usdConverted:true,sales,totals:{copies:snapshot.totals.copies,gross:sum("retailUsd"),royalties:sum("royaltyUsd"),manufacturing:sum("manufacturingUsd"),fees:cents(sum("retailUsd")-sum("royaltyUsd"))}};
+  return {...snapshot,usdConverted:true,sales,payments,payouts:{count:payments.length,totalUsd:cents(payments.reduce((n,r)=>n+r.payoutUsd,0)),latestPaymentDate:payments.map(r=>r.paymentDate).sort().at(-1)??""},totals:{copies:snapshot.totals.copies,gross:sum("retailUsd"),royalties:sum("royaltyUsd"),manufacturing:sum("manufacturingUsd"),fees:cents(sum("retailUsd")-sum("royaltyUsd"))}};
 }
